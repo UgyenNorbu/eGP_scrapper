@@ -3,13 +3,12 @@
 # Import packages
 
 import time
+from datetime import date
 import pandas as pd
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-# from selenium.webdriver.support.wait import WebDriverWait
-# from selenium.webdriver.support import expected_conditions as EC
 
 # Initialize webdriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
@@ -66,7 +65,8 @@ for i in range(N):
     else:
         split_drop_cols(input_colname[i], my_df, '|')
 
-# Print the dataframe
-print(my_df.head(3))
+# Export the data
+DATE = str(date.today())
+FILE_NAME = DATE + '_data.csv'
 
-#TODO: Delete the venv folder from Github
+my_df.to_csv(FILE_NAME)
