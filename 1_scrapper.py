@@ -1,7 +1,5 @@
-"""Scrap e-GP website"""
-
+''' INITIALIZE THE WEB LINK '''
 # Import packages
-
 import time
 from datetime import date
 import pandas as pd
@@ -18,17 +16,59 @@ time.sleep(1)
 URL = 'https://www.egp.gov.bt/resources/common/TenderListing.jsp?h=t'
 driver.get(URL)
 
-# Identify HTML element for the table with ID = 'resultTable' and create a pandas dataframe
-table = driver.find_element(By.CSS_SELECTOR, "table#resultTable").get_attribute("outerHTML")
-my_df = pd.read_html(table)[0]
 
-time.sleep(3)
+
+
+''' SCRAP THE HTML TABLE '''
+
+# Identify HTML element for the table with ID = 'resultTable' and create a pandas dataframe
+def read_table_to_df():
+    table = driver.find_element(By.CSS_SELECTOR, "table#resultTable").get_attribute("outerHTML")
+    table_df = pd.read_html(table)[0]
+    return table_df
+
+# Find how many number of pages long a HTML table is
+
+def find_table_len():
+    pg_no = driver.find_element(By.ID, 'pageTot').text
+    return int(pg_no)
+
+# Read paginated table here
+def scrap_table_seq(pg_no = find_table_len()):
+    master_col_names = ['Sl. No.',
+                         'Tender ID,  Reference No,  Public Status',
+                         'Procurement Category,  Title',
+                         'Hierarchy Node',
+                         'Type,  Method',
+                         'Publishing Date & Time | Closing Date & Time']
+    master_df = pd.DataFrame(columns= master_col_names)
+    print(master_df)
+    if pg_no == 1:
+        my_df = read_table_to_df()
+        master_df = pd.concat([master_df, my_df])
+    else:
+        for i in range(1, pg_no + 1):
+            pg_no_form = driver.find_element(By.ID, 'dispPage')
+            pg_no_form.clear()
+            pg_no_form.send_keys(i)
+            go_to_page = driver.find_element(By.ID, 'btnGoto')
+            go_to_page.click()
+            my_df = read_table_to_df()
+            time.sleep(1)
+            master_df = pd.concat([master_df, my_df], ignore_index=True)
+    return master_df
+
+time.sleep(1)
+compiled_df = scrap_table_seq()
 driver.quit()
+
+
+''' CLEAN AND EXPORT THE DATA '''
 
 # Clean the dataframe
 
 # Drop the 1st column 'Sl. no.'
-my_df.drop('Sl. No.', axis = 1, inplace = True)
+compiled_df.drop('Sl. No.', axis = 1, inplace = True)
 
 # Generate col_names
 
@@ -56,17 +96,17 @@ def split_drop_cols(col_name, input_df, delim):
     return input_df
 
 # Input col_names and df to helper function
-N = len(get_col_names(my_df))
-input_colname = get_col_names(my_df)
+input_colname = get_col_names(compiled_df)
+N = len(input_colname)
 
 for i in range(N):
     if i < (N - 1):
-        split_drop_cols(input_colname[i], my_df, ',')
+        split_drop_cols(input_colname[i], compiled_df, ',')
     else:
-        split_drop_cols(input_colname[i], my_df, '|')
+        split_drop_cols(input_colname[i], compiled_df, '|')
 
 # Export the data
 DATE = str(date.today())
 FILE_NAME = DATE + '_data.csv'
 
-my_df.to_csv(FILE_NAME)
+compiled_df.to_csv(FILE_NAME)
