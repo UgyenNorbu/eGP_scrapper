@@ -15,3 +15,6 @@ rapid_test.ipynb
 # Output folders
 export_xl
 scrapped_csv
+
+# Test Python file
+test.py
