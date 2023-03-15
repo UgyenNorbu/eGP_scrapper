@@ -1,5 +1,17 @@
+# Virtual environment
 .venv
+
+# Checkpoint and cache
 __pycache__
-*.csv
-rapid_test.ipynb
 .ipynb_checkpoints
+
+# Output files
+*.csv
+*.xlsx
+
+# Jupyter notebook
+rapid_test.ipynb
+
+# Output folders
+export_xl
+scrapped_csv
