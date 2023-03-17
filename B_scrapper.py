@@ -9,18 +9,18 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
-def read_table_to_df():
+def read_table_to_df(driver):
     ''' Identify HTML element for the table with ID = 'resultTable' and create a pandas dataframe '''
     table = driver.find_element(By.CSS_SELECTOR, "table#resultTable").get_attribute("outerHTML")
     table_df = pd.read_html(table)[0]
     return table_df
 
-def find_table_len():
+def find_table_len(driver):
     ''' Find how many number of pages long a HTML table is '''
     pg_no = driver.find_element(By.ID, 'pageTot').text
     return int(pg_no)
 
-def scrap_table_seq(pg_no = find_table_len()):
+def scrap_table_seq(driver, pg_no):
     ''' Read paginated table he re '''
     master_col_names = ['Sl. No.',
                          'Tender ID,  Reference No,  Public Status',
@@ -32,7 +32,7 @@ def scrap_table_seq(pg_no = find_table_len()):
     master_df = pd.DataFrame(columns= master_col_names)
     
     if pg_no == 1:
-        my_df = read_table_to_df()
+        my_df = read_table_to_df(driver=driver)
         master_df = pd.concat([master_df, my_df])
     else:
         for i in range(1, pg_no + 1):
@@ -41,7 +41,7 @@ def scrap_table_seq(pg_no = find_table_len()):
             pg_no_form.send_keys(i)
             go_to_page = driver.find_element(By.ID, 'btnGoto')
             go_to_page.click()
-            my_df = read_table_to_df()
+            my_df = read_table_to_df(driver= driver)
             time.sleep(2)
             master_df = pd.concat([master_df, my_df], ignore_index=True)
     return master_df
@@ -70,14 +70,15 @@ def split_drop_cols(col_name, input_df, delim):
 def main_scrapper():
     ''' Main wrapper function calling all other helper functions '''
     #SCRAP
-    # Initialize webdriver
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-    # Connect to the url
+    my_driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+
     time.sleep(1)
     URL = 'https://www.egp.gov.bt/resources/common/TenderListing.jsp?h=t'
-    driver.get(URL)
-    compiled_df = scrap_table_seq()
-    driver.quit()
+    my_driver.get(URL)
+    time.sleep(1)
+    compiled_df = scrap_table_seq(driver= my_driver, pg_no=find_table_len(driver= my_driver))
+    time.sleep(1)
+    my_driver.quit()
 
     # CLEAN
     compiled_df.drop('Sl. No.', axis = 1, inplace = True)
